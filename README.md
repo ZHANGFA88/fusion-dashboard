@@ -1,16 +1,16 @@
-# Fusion Dashboard · 五方融合自用大屏
+# Fusion Console · 五方融合个人情报控制台
 
-把五个各自独立的项目**原样合体**到一个仓库、一个门户之下运行的个人大屏：
+把五个各自独立的项目融合成**一台个人情报控制台**（现行 **A 版**）：
 
 - 金融行情（FinSight）
 - Solana meme 币纸面交易实验室（Degen Lab）
 - 机械蜘蛛提示词可视化（Prompt Spider UI）
-- 全球指数定投赛跑（已迁入，静态版）
-- AI 安全热点（本地阅读页，数据读 Hub 仓）
+- 全球指数定投赛跑（FRAME_SPEC_V3）
+- AI 安全热点（数据来自 AISafetyHot-Hub）
 
-核心理念是 **方向 B：只合体、不改风格**。不做统一视觉改版，不给任何模块注入全局样式或脚本；每个模块保持它原本的页面、配色与交互，从门户进入、浏览器后退返回。跨模块的数据打通只发生在后台，不动任何模块的脸。
+**现行版本是 A 版（统一融合）**：单页控制台、一套设计系统、六个视图（总览/行情/实验室/赛跑/蜘蛛/安全）、**中英双语**一键切换；每个项目的核心内容与数据全部保留，只是不再各长一张脸。总览的「融合信息流」把财经快讯、安全精选与实验日志交织成一条时间线。构建的唯一依据是 **[docs/SPEC-A.md](docs/SPEC-A.md)**（目的/形式/保留清单/设计系统/数据契约/验收逐项写死）。
 
-> 部署与使用请看 **[详细教程 docs/TUTORIAL.md](docs/TUTORIAL.md)**（从零安装到常开部署、故障排查全都有）。各模块的来源与许可见 **[docs/CREDITS.md](docs/CREDITS.md)**。融合的完整设计与取舍见 **[PLAN.md](PLAN.md)**。
+> 此前的方向 B（只合体、不改风格的门户版）已被 A 版取代：根路径 `/` 现在是控制台，B 版门户与各模块原页仍保留在仓库中作资产与回退（入口见下表）。部署与使用请看 **[详细教程 docs/TUTORIAL.md](docs/TUTORIAL.md)**。各模块的来源与许可见 **[docs/CREDITS.md](docs/CREDITS.md)**。全过程见 **[PLAN.md](PLAN.md)**。
 
 ---
 
@@ -18,7 +18,8 @@
 
 | 模块 | 入口 | 来源 | 服务方式 | 说明 |
 |---|---|---|---|---|
-| 门户 Portal | `/` | 本仓库新建 | 主干 serve.py 托管 | 五张模块卡 + 在线状态探针，只做导航 |
+| **融合控制台（A 版）** | `/`（`app/`） | 本仓库新建 | 主干 serve.py 托管 | 六视图单页应用：总览（KPI+融合信息流）/行情/实验室/赛跑/蜘蛛/安全；统一设计系统，中英双语切换 |
+| 门户 Portal（B 版，旧） | `/portal/index.html` | 本仓库新建 | 主干 serve.py 托管 | 五张模块卡 + 在线状态探针，只做导航（已被控制台取代，保留回退） |
 | FinSight 金融大屏 | `/finance` | [ZHANGFA88/finance-dashboard](https://github.com/ZHANGFA88/finance-dashboard) | 主干 serve.py（同进程接口） | 全球指数、自选股、K 线、板块、资讯、筹码分布等 15 个实时接口 |
 | Degen Lab | `/modules/degen/index.html` | [Vazolini/grokbot-jev-dashboard](https://github.com/Vazolini/grokbot-jev-dashboard) | 静态托管（只读镜像） | 葡语界面、8 个交易机器人纸面交易；数据每 20 秒从其原仓库 `data` 分支的 state.json 拉取，本仓库不写它的任何状态 |
 | Prompt Spider | 独立服务 `:4317` | [Kirito14IT/prompt-spider-ui](https://github.com/Kirito14IT/prompt-spider-ui)（MIT） | 自有 `server.mjs`（Node ≥ 20）独立进程 | 机械蜘蛛逐词抓取提示词并按 code / model / you 分流；因其前端使用绝对路径资源，必须以根路径独立服务，不能塞进子路径 |
