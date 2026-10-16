@@ -2044,6 +2044,43 @@ def _fusion_feed_get(limit=30):
         idx += 1
     return {'ok': True, 'items': merged, 'degraded': degraded, 'ts': int(time.time())}
 
+_degen_state_cache = {'ts': 0, 'data': None}
+_safety_file_cache = {}
+
+def _degen_state_get():
+    """Degen 上游 state.json 同源代理：浏览器不再直连 raw.githubusercontent，
+    避免跨域与第三方可用性问题（主干本来就为聚合在拉同一份数据）。"""
+    now = time.time()
+    if _degen_state_cache['data'] is not None and now - _degen_state_cache['ts'] < 15:
+        return _degen_state_cache['data']
+    data = json.loads(http_get_retry(DEGEN_STATE_URL, timeout=8, tries=2))
+    _degen_state_cache.update(ts=now, data=data)
+    return data
+
+def _safety_file_get(rel):
+    """AISafetyHot-Hub 文件同源代理（仅 daily/ 与 daily-papers/ 白名单，禁穿越）。"""
+    if '..' in rel or not (rel.startswith('daily/') or rel.startswith('daily-papers/')):
+        return None, 400
+    now = time.time()
+    hit = _safety_file_cache.get(rel)
+    if hit and now - hit[0] < 60:
+        return hit[1], 200
+    body = None
+    for _ in range(2):
+        try:
+            # 用 http_get（urllib 对 404 会抛错）；http_get_retry 的 curl 兜底不带 -f，
+            # 会把 "404: Not Found" 当成功体返回，文件代理必须用真状态码。
+            body = http_get(SAFETY_RAW + '/' + rel, timeout=8)
+            break
+        except Exception:
+            body = None
+    if body is None:
+        return None, 404
+    if len(_safety_file_cache) > 64:
+        _safety_file_cache.clear()
+    _safety_file_cache[rel] = (now, body)
+    return body, 200
+
 # ========== HTTP 服务 ==========
 _quote_cache = {'data': None, 'ts': 0}
 QUOTE_TTL = 8  # 秒
@@ -2107,6 +2144,10 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._api_fusion_digest(q)
             if path == '/api/fusion/feed':
                 return self._api_fusion_feed(q)
+            if path == '/api/fusion/degen-state':
+                return self._api_fusion_degen_state(q)
+            if path == '/api/fusion/safety-file':
+                return self._api_fusion_safety_file(q)
             if path == '/' :
                 # Fusion 主干改动（仅路由层）：A 版起根路径给统一控制台，FinSight 原页走 /finance
                 self.path = '/app/index.html'
@@ -2225,6 +2266,28 @@ class Handler(SimpleHTTPRequestHandler):
     def _api_fusion_status(self, q):
         """Fusion 聚合状态（P2）：五模块关键数一口出，供门户与外部脚本消费"""
         return self._json(200, _fusion_status_get())
+
+    def _api_fusion_degen_state(self, q):
+        """Degen state 同源代理（A 版前端专用，避免浏览器直连跨域源）"""
+        try:
+            return self._json(200, _degen_state_get())
+        except Exception as e:
+            return self._json(502, {'ok': False, 'error': str(e)})
+
+    def _api_fusion_safety_file(self, q):
+        """Hub 文件同源代理：path 形如 daily/2026/2026-10-16.md（白名单校验在 _safety_file_get）"""
+        rel = (q.get('path') or [''])[0]
+        body, code = _safety_file_get(rel)
+        if body is None:
+            return self._json(code, {'ok': False, 'error': 'not found'})
+        ctype = 'application/json; charset=utf-8' if rel.endswith('.json') else 'text/plain; charset=utf-8'
+        raw = body.encode('utf-8') if isinstance(body, str) else body
+        self.send_response(200)
+        self.send_header('Content-Type', ctype)
+        self.send_header('Content-Length', str(len(raw)))
+        self.send_header('Cache-Control', 'no-store')
+        self.end_headers()
+        self.wfile.write(raw)
 
     def _api_fusion_feed(self, q):
         """A 版融合信息流：三源合流时间线（财经/安全/实验室），供控制台总览消费"""
