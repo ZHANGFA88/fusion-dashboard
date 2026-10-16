@@ -33,10 +33,10 @@
     <p class="desc">全品类实时行情、K 线、技术分析、筹码分布与异动报警，你的 FinSight 原版大屏。</p>
     <div class="stat"><span class="dot" id="st-fin"></span><span id="st-fin-tx">检测中…</span></div>
   </a>
-  <a class="card" style="--ac:#e8b866" href="https://muse.ai/space/space-3" target="_blank" rel="noopener">
+  <a class="card" style="--ac:#e8b866" href="/modules/race/index.html">
     <div class="name">全球配置 · 定投赛跑</div><div class="en">DCA RACE</div>
-    <p class="desc">六大指数 2010–2026 定投赛跑动画页。现行版在原页面，P1 按 V3 原规格迁入本仓。</p>
-    <div class="stat"><span class="dot warn"></span><span>现行版 · P1 迁入</span></div>
+    <p class="desc">六大指数 2008–2026 定投赛跑动画页，按 FRAME_SPEC_V3 原规格重建，吃引擎真数据（与 space-3 同口径）。</p>
+    <div class="stat"><span class="dot" id="st-race"></span><span id="st-race-tx">检测中…</span></div>
   </a>
   <a class="card" style="--ac:#ffd23f" href="/modules/degen/index.html">
     <div class="name">Degen Lab</div><div class="en">GROKBOT + JEV · PAPER</div>
@@ -48,13 +48,13 @@
     <p class="desc">提示词分流可视化，原 app 原样独立运行（Node 服务，端口 4317），演示与实时模式都在它那边。</p>
     <div class="stat"><span class="dot warn"></span><span>独立进程 · 需单独启动（见 README）</span></div>
   </a>
-  <a class="card" style="--ac:#ff4d5e" href="https://aisafetyhot.com" target="_blank" rel="noopener">
+  <a class="card" style="--ac:#ff4d5e" href="/modules/safety/index.html">
     <div class="name">AI 安全热点</div><div class="en">AISAFETYHOT</div>
-    <p class="desc">AI 安全新闻、日报与每日论文精选。它的数据仓已 fork 到你的账号，页面先直链官网。</p>
-    <div class="stat"><span class="dot warn"></span><span>官网直链 · 数据镜像 P1 再议</span></div>
+    <p class="desc">AI 安全日报与每日论文精选，本地阅读页实时读你 fork 的 AISafetyHot-Hub 数据仓（官网观测台风格）。</p>
+    <div class="stat"><span class="dot" id="st-safety"></span><span id="st-safety-tx">检测中…</span></div>
   </a>
 </main>
-<footer>主干服务：FinSight serve.py（端口 8770）· 蜘蛛：node server.mjs（端口 4317）· 本仓只自用</footer>
+<footer>主干服务：FinSight serve.py（端口 8770）· 蜘蛛：node server.mjs（端口 4317）· 各模块许可见 docs/CREDITS.md</footer>
 <script>
   document.getElementById('spider-link').href = 'http://' + location.hostname + ':4317/';
   function probe(url, dotId, txId, okText) {
@@ -68,6 +68,8 @@
   }
   probe('/api/finance/indices', 'st-fin', 'st-fin-tx', '行情接口正常');
   probe('/modules/degen/decisions.js', 'st-degen', 'st-degen-tx', '模块文件就位 · 数据读原仓');
+  probe('/modules/race/data/engine.json', 'st-race', 'st-race-tx', '引擎数据就位');
+  probe('/modules/safety/index.html', 'st-safety', 'st-safety-tx', '阅读页就位 · 数据读 Hub 仓');
 </script>
 </body>
 </html>

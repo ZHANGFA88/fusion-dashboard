@@ -5,8 +5,8 @@
 - 金融行情（FinSight）
 - Solana meme 币纸面交易实验室（Degen Lab）
 - 机械蜘蛛提示词可视化（Prompt Spider UI）
-- 全球指数定投赛跑（重建中，P1）
-- AI 安全热点（门户直链官网）
+- 全球指数定投赛跑（已迁入，静态版）
+- AI 安全热点（本地阅读页，数据读 Hub 仓）
 
 核心理念是 **方向 B：只合体、不改风格**。不做统一视觉改版，不给任何模块注入全局样式或脚本；每个模块保持它原本的页面、配色与交互，从门户进入、浏览器后退返回。跨模块的数据打通只发生在后台，不动任何模块的脸。
 
@@ -22,8 +22,8 @@
 | FinSight 金融大屏 | `/finance` | [ZHANGFA88/finance-dashboard](https://github.com/ZHANGFA88/finance-dashboard) | 主干 serve.py（同进程接口） | 全球指数、自选股、K 线、板块、资讯、筹码分布等 15 个实时接口 |
 | Degen Lab | `/modules/degen/index.html` | [Vazolini/grokbot-jev-dashboard](https://github.com/Vazolini/grokbot-jev-dashboard) | 静态托管（只读镜像） | 葡语界面、8 个交易机器人纸面交易；数据每 20 秒从其原仓库 `data` 分支的 state.json 拉取，本仓库不写它的任何状态 |
 | Prompt Spider | 独立服务 `:4317` | [Kirito14IT/prompt-spider-ui](https://github.com/Kirito14IT/prompt-spider-ui)（MIT） | 自有 `server.mjs`（Node ≥ 20）独立进程 | 机械蜘蛛逐词抓取提示词并按 code / model / you 分流；因其前端使用绝对路径资源，必须以根路径独立服务，不能塞进子路径 |
-| 全球指数定投赛跑 | `/race`（P1 重建中） | 本人此前作品（数据引擎在仓库外维护） | 计划：静态页吃引擎 JSON | 六大指数 2008–2026 月度定投回测动画，数据每日自动刷新 |
-| AI 安全热点 | 门户卡直链 [aisafetyhot.com](https://aisafetyhot.com) | [AISafetyHot-Hub](https://github.com/ZHANGFA88/AISafetyHot-Hub) | 外链（无自带前端） | AI 安全日报与每日论文精选；内容 CC BY-NC 4.0，本仓库不镜像其内容 |
+| 全球指数定投赛跑 | `/modules/race/index.html` | 本人此前作品（按 FRAME_SPEC_V3 重建） | 静态托管，`fetch` 引擎 JSON | 六大指数 2008–2026 定投回测动画（约 117 秒），终值口径与原版一致；刷新工具在 `modules/race/tools/` |
+| AI 安全热点 | `/modules/safety/index.html` | [AISafetyHot-Hub](https://github.com/ZHANGFA88/AISafetyHot-Hub) | 静态阅读页，浏览器端实时读 Hub 仓 | AI 安全日报全文 + 每日 30 篇精选论文卡，照官网观测台风格；内容 CC BY-NC 4.0，本仓库不存储其内容（官网：[aisafetyhot.com](https://aisafetyhot.com)） |
 
 ## 架构
 
@@ -33,6 +33,8 @@
   ├─ http://<主机>:8770/                 门户（本仓库 portal/）
   ├─ http://<主机>:8770/finance         FinSight 大屏 ── /api/finance/*（同进程，scripts/serve.py）
   ├─ http://<主机>:8770/modules/degen/  Degen Lab ── 数据读上游仓库 state.json（只读）
+  ├─ http://<主机>:8770/modules/race/   定投赛跑 ── 静态页 + 引擎 JSON（modules/race/data/）
+  ├─ http://<主机>:8770/modules/safety/ 安全热点阅读页 ── 浏览器端读 Hub 仓日报/精选 JSON
   └─ http://<主机>:4317/                Prompt Spider（独立 Node 服务，modules/spider/server.mjs）
 ```
 
