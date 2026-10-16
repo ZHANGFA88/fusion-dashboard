@@ -1,0 +1,17 @@
+[Unit]
+Description=Fusion Dashboard main service (portal + FinSight + static modules)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=__REPO__
+ExecStart=__PYTHON3__ __REPO__/scripts/serve.py
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/fusion-serve.log
+StandardError=append:/var/log/fusion-serve.err
+
+[Install]
+WantedBy=multi-user.target

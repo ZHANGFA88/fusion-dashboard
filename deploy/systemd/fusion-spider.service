@@ -1,0 +1,17 @@
+[Unit]
+Description=Fusion Dashboard Prompt Spider service (port 4317)
+After=network-online.target fusion-serve.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=__REPO__/modules/spider
+ExecStart=__NODE__ __REPO__/modules/spider/server.mjs
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/fusion-spider.log
+StandardError=append:/var/log/fusion-spider.err
+
+[Install]
+WantedBy=multi-user.target
