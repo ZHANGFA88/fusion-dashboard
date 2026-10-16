@@ -40,7 +40,7 @@
       '<div class="stage" style="height:min(74vh,780px);margin-top:12px"><iframe src="' + url + '" title="Prompt Spider" loading="lazy"></iframe></div></div>' +
       '<div>' +
       '<div class="card" style="--ac:var(--c-spider)"><h3><span class="bar"></span>' + F.t('spider.svc') + '</h3>' +
-      '<div class="big num" style="font-size:22px"><span class="dot ' + (sp.online ? 'ok' : 'bad') + '" style="display:inline-block;margin-right:8px"></span>' + (sp.online ? F.t('core.online') : F.t('core.offline')) + '</div>' +
+      '<div class="big num" id="spState" style="font-size:22px"><span class="dot ' + (sp.online ? 'ok' : 'bad') + '" style="display:inline-block;margin-right:8px"></span>' + (sp.online ? F.t('core.online') : F.t('core.offline')) + '</div>' +
       '<div class="sub">node server.mjs · :4317</div></div>' +
       '<div class="card" style="margin-top:16px;--ac:var(--c-spider)"><h3><span class="bar"></span>' + F.t('spider.tools') + '</h3><div style="margin-top:8px">' +
       TOOLS.map(function (x) { return '<div style="padding:6px 0;border-bottom:1px solid rgba(30,39,64,.55)"><div class="num" style="font-size:12.5px;color:var(--c-spider)">' + x[0] + '</div><div style="font-size:13px;margin-top:2px">' + (F.lang === 'en' ? x[2] : x[1]) + '</div></div>'; }).join('') +
@@ -49,5 +49,13 @@
       '<div style="margin-top:8px;line-height:1.9;font-size:13.5px">1. ' + F.t('spider.step1') + '<br>2. ' + F.t('spider.step2') + '<br>3. ' + F.t('spider.step3') + '</div></div>' +
       '</div></div>';
   }
-  F.registerView('spider', { mount: mount });
+  F.registerView('spider', {
+    mount: mount,
+    onStatus: function (s) {
+      // 状态到达/变化时只更新状态卡，不重挂载（避免舞台 iframe 重载）
+      var el = document.getElementById('spState'); if (!el || !s || !s.spider) return;
+      var on = !!s.spider.online;
+      el.innerHTML = '<span class="dot ' + (on ? 'ok' : 'bad') + '" style="display:inline-block;margin-right:8px"></span>' + (on ? F.t('core.online') : F.t('core.offline'));
+    }
+  });
 })();

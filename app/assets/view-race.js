@@ -7,18 +7,19 @@
   });
   var NAMES = { qqq: ['纳指100', 'Nasdaq-100'], spy: ['标普500', 'S&P 500'], csi: ['沪深300', 'CSI 300'], n225: ['日经225', 'Nikkei 225'], dax: ['德国DAX', 'DAX'], cac: ['法国CAC40', 'CAC 40'] };
 
-  function mount(el) {
-    var s = F.status, rc = (s && s.race) || {};
-    function stat(label, val, ac) {
-      return '<div class="card" style="--ac:' + ac + '"><h3><span class="bar"></span>' + label + '</h3><div class="big num" style="font-size:24px">' + val + '</div></div>';
-    }
-    el.innerHTML =
-      '<div class="grid" style="grid-template-columns:repeat(4,1fr)">' +
-      stat(F.t('race.final'), rc.online ? F.fmtMoney(rc.final_value) : '—', 'var(--c-race)') +
+  function stat(label, val, ac) {
+    return '<div class="card" style="--ac:' + ac + '"><h3><span class="bar"></span>' + label + '</h3><div class="big num" style="font-size:24px">' + val + '</div></div>';
+  }
+  function statsHtml(rc) {
+    return stat(F.t('race.final'), rc.online ? F.fmtMoney(rc.final_value) : '—', 'var(--c-race)') +
       stat(F.t('race.irr'), rc.online ? F.fmtFrac(rc.irr) : '—', 'var(--c-race)') +
       stat(F.t('race.mdd'), rc.online ? F.fmtFrac(rc.mdd) : '—', 'var(--c-race)') +
-      stat(F.t('race.eq'), rc.online ? F.fmtFrac(rc.eq_ret) : '—', 'var(--c-race)') +
-      '</div>' +
+      stat(F.t('race.eq'), rc.online ? F.fmtFrac(rc.eq_ret) : '—', 'var(--c-race)');
+  }
+  function mount(el) {
+    var s = F.status, rc = (s && s.race) || {};
+    el.innerHTML =
+      '<div class="grid" id="raceStats" style="grid-template-columns:repeat(4,1fr)">' + statsHtml(rc) + '</div>' +
       '<div class="card" style="margin-top:16px;--ac:var(--c-race)"><h3><span class="bar"></span>' + F.t('race.stage') + '</h3>' +
       '<a class="more" href="/modules/race/index.html" target="_blank" rel="noopener">' + F.t('race.openFull') + ' ↗</a>' +
       '<div class="stage" style="height:min(72vh,760px);margin-top:12px"><iframe src="/modules/race/index.html" title="DCA Race" loading="lazy"></iframe></div>' +
@@ -34,5 +35,11 @@
       }).join('');
     }).catch(function () {});
   }
-  F.registerView('race', { mount: mount });
+  F.registerView('race', {
+    mount: mount,
+    onStatus: function (s) {
+      var box = document.getElementById('raceStats');
+      if (box && s && s.race) box.innerHTML = statsHtml(s.race);
+    }
+  });
 })();
