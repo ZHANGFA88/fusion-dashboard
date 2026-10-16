@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fusion · 项目门户</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0a0c10; color:#e8eef2; font-family:-apple-system,"PingFang SC","Noto Sans CJK SC",sans-serif; min-height:100vh; }
+  header { padding:34px 40px 6px; }
+  h1 { font-size:24px; letter-spacing:3px; font-weight:700; }
+  h1 span { color:#8fa1b3; font-size:12px; letter-spacing:2px; margin-left:12px; font-weight:400; }
+  .sub { color:#63707e; font-size:13px; padding:6px 40px 20px; }
+  main { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; padding:0 40px 40px; }
+  a.card { display:block; text-decoration:none; color:inherit; background:#0e1218; border:1px solid #1f2833; border-radius:14px; padding:20px 22px; border-top:3px solid var(--ac); transition:border-color .15s, transform .15s; }
+  a.card:hover { border-color:var(--ac); transform:translateY(-2px); }
+  .name { font-size:19px; font-weight:700; }
+  .en { color:#63707e; font-size:11px; letter-spacing:2px; margin-top:2px; }
+  .desc { color:#a9bac9; font-size:13.5px; line-height:1.55; margin-top:12px; min-height:42px; }
+  .stat { font-size:12px; color:#63707e; margin-top:10px; display:flex; align-items:center; gap:7px; }
+  .dot { width:8px; height:8px; border-radius:50%; background:#3a4552; flex:none; }
+  .dot.ok { background:#2bd97c; box-shadow:0 0 7px #2bd97c; }
+  .dot.warn { background:#e8b866; box-shadow:0 0 7px #e8b866; }
+  footer { color:#414d59; font-size:12px; padding:0 40px 30px; }
+</style>
+</head>
+<body>
+<header><h1>FUSION 项目门户<span>DIRECTION B · 原风格融合</span></h1></header>
+<p class="sub">五个项目各用各的原页面，从这里进。模块内部不做任何改动。</p>
+<main>
+  <a class="card" style="--ac:#4fd6ff" href="/finance">
+    <div class="name">股票大屏</div><div class="en">FINSIGHT · FINANCE</div>
+    <p class="desc">全品类实时行情、K 线、技术分析、筹码分布与异动报警，你的 FinSight 原版大屏。</p>
+    <div class="stat"><span class="dot" id="st-fin"></span><span id="st-fin-tx">检测中…</span></div>
+  </a>
+  <a class="card" style="--ac:#e8b866" href="https://muse.ai/space/space-3" target="_blank" rel="noopener">
+    <div class="name">全球配置 · 定投赛跑</div><div class="en">DCA RACE</div>
+    <p class="desc">六大指数 2010–2026 定投赛跑动画页。现行版在原页面，P1 按 V3 原规格迁入本仓。</p>
+    <div class="stat"><span class="dot warn"></span><span>现行版 · P1 迁入</span></div>
+  </a>
+  <a class="card" style="--ac:#ffd23f" href="/modules/degen/index.html">
+    <div class="name">Degen Lab</div><div class="en">GROKBOT + JEV · PAPER</div>
+    <p class="desc">Solana meme 币纸面交易盘，原页原样（含葡语界面），数据继续读它原仓库的 state。</p>
+    <div class="stat"><span class="dot" id="st-degen"></span><span id="st-degen-tx">检测中…</span></div>
+  </a>
+  <a class="card" style="--ac:#f34a87" href="#" id="spider-link">
+    <div class="name">机械蜘蛛</div><div class="en">PROMPT SPIDER UI</div>
+    <p class="desc">提示词分流可视化，原 app 原样独立运行（Node 服务，端口 4317），演示与实时模式都在它那边。</p>
+    <div class="stat"><span class="dot warn"></span><span>独立进程 · 需单独启动（见 README）</span></div>
+  </a>
+  <a class="card" style="--ac:#ff4d5e" href="https://aisafetyhot.com" target="_blank" rel="noopener">
+    <div class="name">AI 安全热点</div><div class="en">AISAFETYHOT</div>
+    <p class="desc">AI 安全新闻、日报与每日论文精选。它的数据仓已 fork 到你的账号，页面先直链官网。</p>
+    <div class="stat"><span class="dot warn"></span><span>官网直链 · 数据镜像 P1 再议</span></div>
+  </a>
+</main>
+<footer>主干服务：FinSight serve.py（端口 8770）· 蜘蛛：node server.mjs（端口 4317）· 本仓只自用</footer>
+<script>
+  document.getElementById('spider-link').href = 'http://' + location.hostname + ':4317/';
+  function probe(url, dotId, txId, okText) {
+    fetch(url, { cache: 'no-store' }).then(function (r) {
+      if (!r.ok) throw 0;
+      document.getElementById(dotId).className = 'dot ok';
+      document.getElementById(txId).textContent = okText;
+    }).catch(function () {
+      document.getElementById(txId).textContent = '未响应';
+    });
+  }
+  probe('/api/finance/indices', 'st-fin', 'st-fin-tx', '行情接口正常');
+  probe('/modules/degen/decisions.js', 'st-degen', 'st-degen-tx', '模块文件就位 · 数据读原仓');
+</script>
+</body>
+</html>
