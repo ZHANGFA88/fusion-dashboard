@@ -1984,6 +1984,66 @@ def _fusion_status_get():
     _fusion_cache.update(ts=now, status=status)
     return status
 
+def _fusion_feed_get(limit=30):
+    """A 版融合信息流：财经快讯 + 安全精选 + Degen 日志三源合流，按时间倒序。
+    任一源失败只降级该源（记入 degraded），其余照常返回。"""
+    items, degraded = [], []
+    def _ts(v):
+        try:
+            n = float(v)
+            if n > 1e12: n = n / 1000.0
+            return int(n) if n > 1e9 else int(time.time())
+        except Exception:
+            return int(time.time())
+    try:
+        for n in (_news_global_cache_get() or [])[:15]:
+            items.append({'ts': _ts(_pick(n, 'ts', 'time', 'timestamp', 'pub_time')),
+                          'source': 'finance',
+                          'title': _pick(n, 'title', 'name') or '',
+                          'desc': _pick(n, 'desc', 'summary', 'content', 'digest') or '',
+                          'url': _pick(n, 'url', 'link') or ''})
+    except Exception:
+        degraded.append('finance')
+    try:
+        sf = _fusion_safety()
+        if sf.get('online'):
+            base = int(datetime.datetime.fromisoformat(sf['latest'] + 'T08:00:00+08:00').timestamp())
+            for i, p in enumerate(sf.get('top') or []):
+                items.append({'ts': base - i * 60, 'source': 'safety',
+                              'title': p.get('titleZh') or '', 'desc': p.get('line') or '',
+                              'url': p.get('url') or ''})
+        else:
+            degraded.append('safety')
+    except Exception:
+        degraded.append('safety')
+    try:
+        st = json.loads(http_get_retry(DEGEN_STATE_URL, timeout=8, tries=2))
+        for lg in (st.get('logs') or [])[-10:]:
+            msg = lg.get('msg') or ''
+            items.append({'ts': _ts((lg.get('t') or 0) / 1000.0), 'source': 'degen',
+                          'title': ('[' + (lg.get('tag') or 'LOG') + '] ' + msg)[:120],
+                          'desc': '', 'url': ''})
+    except Exception:
+        degraded.append('degen')
+    # 各源内部按时间倒序后轮转交织：财经快讯的时间戳是抓取时刻（同批相同），
+    # 若全局按 ts 排会被单一来源刷屏；交织保证三源都在首屏，符合「融合流」本意。
+    by_src = {}
+    for it in items:
+        by_src.setdefault(it['source'], []).append(it)
+    for v in by_src.values():
+        v.sort(key=lambda x: -x['ts'])
+    merged, order, idx = [], ['finance', 'safety', 'degen'], 0
+    while len(merged) < limit:
+        progressed = False
+        for src in order:
+            lst = by_src.get(src) or []
+            if idx < len(lst):
+                merged.append(lst[idx]); progressed = True
+                if len(merged) >= limit: break
+        if not progressed: break
+        idx += 1
+    return {'ok': True, 'items': merged, 'degraded': degraded, 'ts': int(time.time())}
+
 # ========== HTTP 服务 ==========
 _quote_cache = {'data': None, 'ts': 0}
 QUOTE_TTL = 8  # 秒
@@ -2045,9 +2105,11 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._api_fusion_status(q)
             if path == '/api/fusion/digest':
                 return self._api_fusion_digest(q)
+            if path == '/api/fusion/feed':
+                return self._api_fusion_feed(q)
             if path == '/' :
-                # Fusion 主干改动（仅路由层）：根路径给门户，FinSight 原页走 /finance
-                self.path = '/portal/index.html'
+                # Fusion 主干改动（仅路由层）：A 版起根路径给统一控制台，FinSight 原页走 /finance
+                self.path = '/app/index.html'
             if path == '/finance' :
                 self.path = '/public/finance.html'
         except Exception as e:
@@ -2163,6 +2225,14 @@ class Handler(SimpleHTTPRequestHandler):
     def _api_fusion_status(self, q):
         """Fusion 聚合状态（P2）：五模块关键数一口出，供门户与外部脚本消费"""
         return self._json(200, _fusion_status_get())
+
+    def _api_fusion_feed(self, q):
+        """A 版融合信息流：三源合流时间线（财经/安全/实验室），供控制台总览消费"""
+        try:
+            limit = max(1, min(60, int((q.get('limit') or ['30'])[0])))
+        except Exception:
+            limit = 30
+        return self._json(200, _fusion_feed_get(limit))
 
     def _api_fusion_digest(self, q):
         """Fusion 每日聚合文本：行情 + Degen 战绩 + 赛跑终值 + 安全精选，可直接用于推送"""
