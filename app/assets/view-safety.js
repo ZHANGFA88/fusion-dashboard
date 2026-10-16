@@ -83,17 +83,32 @@
     return html;
   }
 
+  // 取数通道：主干同源代理优先（/api/fusion/safety-file），失败再直连 Hub raw 兜底
+  function viaProxy(url) {
+    if (url.indexOf(RAW) !== 0) return null;
+    return '/api/fusion/safety-file?path=' + encodeURIComponent(url.slice(RAW.length + 1));
+  }
   function getText(url) {
-    return fetch(url, { cache: 'no-store' }).then(function (r) {
-      if (!r.ok) throw new Error('http ' + r.status);
-      return r.text();
-    });
+    var p = viaProxy(url);
+    var first = p ? fetch(p, { cache: 'no-store' }) : Promise.reject(new Error('no proxy'));
+    return first.then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.text(); })
+      .catch(function () {
+        return fetch(url, { cache: 'no-store' }).then(function (r) {
+          if (!r.ok) throw new Error('http ' + r.status);
+          return r.text();
+        });
+      });
   }
   function getJSON(url) {
-    return fetch(url, { cache: 'no-store' }).then(function (r) {
-      if (!r.ok) throw new Error('http ' + r.status);
-      return r.json();
-    });
+    var p = viaProxy(url);
+    var first = p ? fetch(p, { cache: 'no-store' }) : Promise.reject(new Error('no proxy'));
+    return first.then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+      .catch(function () {
+        return fetch(url, { cache: 'no-store' }).then(function (r) {
+          if (!r.ok) throw new Error('http ' + r.status);
+          return r.json();
+        });
+      });
   }
   function iso(d) { return d.toISOString().slice(0, 10); }
   function todayIso() { return iso(new Date()); }

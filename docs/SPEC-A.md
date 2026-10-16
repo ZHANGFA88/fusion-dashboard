@@ -78,6 +78,7 @@
 
 - 沿用：`/api/finance/*` 全部、`/api/fusion/status`、`/api/fusion/digest`。
 - 新增 `GET /api/fusion/feed?limit=30`：返回 `{ok, items:[{ts, source:'finance'|'safety'|'degen', title, desc, url}]}`。来源：财经=`_news_global_cache_get()`；安全=当日精选 Top5（ts=当日 08:00 +08:00）；实验=上游 state.logs 末 10 条（ts 取其时间字段，无则用抓取时刻）。排序：各源内部按 ts 倒序、三源轮转交织输出（财经快讯的时间戳是同批抓取时刻，全局直排会被单一来源刷屏；交织保证三源同屏，实测 12 条为 4/4/4）。任一源失败时其余照常返回，失败源在 `degraded` 数组里报名字。
+- 同源代理（实测教训补入）：浏览器**不直连** raw.githubusercontent——跨域与第三方可用性不受控。新增 `GET /api/fusion/degen-state`（上游 state.json 透传，15 秒缓存）与 `GET /api/fusion/safety-file?path=`（Hub 文件代理，仅 `daily/`、`daily-papers/` 白名单、禁 `..` 穿越、60 秒缓存；实现必须用会抛错的 http_get 判真状态码，不许用 curl 兜底版以免把 404 页当成功体）。前端一律代理优先、直连兜底。
 - 静态托管：`app/` 目录由现有静态规则直供；根路由 `/` 改指 `app/index.html`（FinSight 仍在 `/finance`，B 版门户文件保留但不再是根）。
 - 跨域/混合内容：蜘蛛与主干同机不同端口，iframe 地址一律用「当前页面 hostname + :4317」拼装，禁止写死 localhost。
 

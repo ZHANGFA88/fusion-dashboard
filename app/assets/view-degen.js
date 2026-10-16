@@ -5,6 +5,7 @@
 (function () {
   var F = window.Fusion;
   var URL = 'https://raw.githubusercontent.com/Vazolini/grokbot-jev-dashboard/data/state.json';
+  var PROXY = '/api/fusion/degen-state'; // 主干同源代理优先，直连作兜底（避免跨域/第三方可用性问题）
   var REFRESH = 20000;
 
   /* 机器人角色双语字典（8 个已知代号；未知代号只显示代号本身） */
@@ -199,7 +200,7 @@
     var agents = d.agents || {}, finals = d.finals || {};
     var bal = d.bal, wins = d.wins || 0, losses = d.losses || 0;
     var eqLast = eq.length ? eq[eq.length - 1].v : null;
-    var tot = wins + losses, wr = tot > 0 ? F.fmtPct(wins / tot * 100) : '—';
+    var tot = wins + losses, wr = tot > 0 ? (wins / tot * 100).toFixed(2) + '%' : '—'; // 胜率不带 + 号
 
     var html = '';
     html += '<div class="card" style="--ac:var(--c-degen);margin-bottom:16px"><h3><span class="bar"></span>' + esc(t('title')) + '</h3>' +
@@ -336,9 +337,14 @@
     // 可见性判定用 .active 类（外壳路由维护）：offsetParent 在无布局环境或
     // fixed 祖先下会误判为 null，导致视图静默不渲染，故不用它。
     if (!el.isConnected || !el.classList.contains('active') || document.hidden) return;
-    fetch(URL, { cache: 'no-store' }).then(function (r) {
+    fetch(PROXY, { cache: 'no-store' }).then(function (r) {
       if (!r.ok) throw new Error('http ' + r.status);
       return r.json();
+    }).catch(function () {
+      return fetch(URL, { cache: 'no-store' }).then(function (r) {
+        if (!r.ok) throw new Error('http ' + r.status);
+        return r.json();
+      });
     }).then(function (d) {
       if (!el.isConnected || !el.classList.contains('active')) return;
       render(el, d || {});

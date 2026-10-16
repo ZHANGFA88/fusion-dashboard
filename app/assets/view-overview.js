@@ -82,8 +82,10 @@
     fetch('/api/fusion/status', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) { s = j; F.status = j; go(); }).catch(go);
     fetch('/api/fusion/feed?limit=30', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) { feed = j; go(); }).catch(function () { feed = { items: [] }; go(); });
     if (!degenCache || Date.now() - degenTs > 60000) {
-      fetch('https://raw.githubusercontent.com/Vazolini/grokbot-jev-dashboard/data/state.json', { cache: 'no-store' })
-        .then(function (r) { return r.json(); }).then(function (st) { degenCache = st.equity || null; degenTs = Date.now(); if (s) render(el, s, feed); }).catch(function () {});
+      fetch('/api/fusion/degen-state', { cache: 'no-store' })
+        .then(function (r) { if (!r.ok) throw new Error('proxy'); return r.json(); })
+        .catch(function () { return fetch('https://raw.githubusercontent.com/Vazolini/grokbot-jev-dashboard/data/state.json', { cache: 'no-store' }).then(function (r) { return r.json(); }); })
+        .then(function (st) { degenCache = st.equity || null; degenTs = Date.now(); if (s) render(el, s, feed); }).catch(function () {});
     }
     lastRender = Date.now();
   }
