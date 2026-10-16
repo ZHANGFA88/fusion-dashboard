@@ -9,7 +9,9 @@ from datetime import datetime
 API_BASE = os.environ.get('API_BASE', 'http://127.0.0.1:8770')
 OPENCLAW_BIN = os.environ.get('OPENCLAW_BIN', '/opt/homebrew/bin/openclaw')
 WX_TARGET = os.environ.get('WX_TARGET', 'o9cq80zOXMiSDvE8M5PAioQH4PjM@im.wechat')
-STATE_FILE = os.environ.get('STALE_STATE', os.path.expanduser('~/finance-dashboard/data/stale_alarm_state.json'))
+# 融合仓收尾：默认状态文件改为本仓库 data/ 目录（原旧仓 ~/finance-dashboard 路径已废弃），仍可被 STALE_STATE 覆盖
+REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+STATE_FILE = os.environ.get('STALE_STATE', os.path.join(REPO_DIR, 'data', 'stale_alarm_state.json'))
 # 交易时段内数据超过多少秒没更新算陈旧
 STALE_SEC = int(os.environ.get('STALE_SEC', '600'))       # 10分钟
 # 同一告警冷却，防刷屏

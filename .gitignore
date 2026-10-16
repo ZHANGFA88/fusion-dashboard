@@ -1,4 +1,5 @@
 data/
+scripts/push.env
 __pycache__/
 mockup/
 *.db

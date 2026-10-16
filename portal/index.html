@@ -46,7 +46,7 @@
   <a class="card" style="--ac:#f34a87" href="#" id="spider-link">
     <div class="name">机械蜘蛛</div><div class="en">PROMPT SPIDER UI</div>
     <p class="desc">提示词分流可视化，原 app 原样独立运行（Node 服务，端口 4317），演示与实时模式都在它那边。</p>
-    <div class="stat"><span class="dot warn"></span><span>独立进程 · 需单独启动（见 README）</span></div>
+    <div class="stat"><span class="dot warn" id="st-spider"></span><span id="st-spider-tx">独立进程 · 需单独启动（见 README）</span></div>
   </a>
   <a class="card" style="--ac:#ff4d5e" href="/modules/safety/index.html">
     <div class="name">AI 安全热点</div><div class="en">AISAFETYHOT</div>
@@ -70,6 +70,17 @@
   probe('/modules/degen/decisions.js', 'st-degen', 'st-degen-tx', '模块文件就位 · 数据读原仓');
   probe('/modules/race/data/engine.json', 'st-race', 'st-race-tx', '引擎数据就位');
   probe('/modules/safety/index.html', 'st-safety', 'st-safety-tx', '阅读页就位 · 数据读 Hub 仓');
+  // P2 后台互喂：聚合接口把五模块的实时关键数填进卡片
+  fetch('/api/fusion/status', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (s) {
+    function setTx(id, tx) { var el = document.getElementById(id); if (el && tx) el.textContent = tx; }
+    function setDot(id, ok) { var el = document.getElementById(id); if (el) el.className = 'dot ' + (ok ? 'ok' : 'warn'); }
+    var idx = (s.finance && s.finance.indices) || [];
+    if (idx.length) setTx('st-fin-tx', '行情接口正常 · ' + idx[0].name + ' ' + idx[0].price + '（' + (idx[0].pct >= 0 ? '+' : '') + idx[0].pct + '%）');
+    if (s.degen && s.degen.online) setTx('st-degen-tx', '余额 $' + Math.round(s.degen.bal).toLocaleString() + ' · ' + s.degen.wins + ' 胜 ' + s.degen.losses + ' 负 · 持仓 ' + s.degen.open);
+    if (s.race && s.race.online) setTx('st-race-tx', '组合终值 ¥' + s.race.final_value.toLocaleString() + ' · +' + (s.race.port_ret * 100).toFixed(2) + '%');
+    if (s.safety && s.safety.online) setTx('st-safety-tx', '最新 ' + s.safety.latest + ' · 精选 ' + s.safety.count + ' 篇');
+    if (s.spider) { setDot('st-spider', s.spider.online); setTx('st-spider-tx', s.spider.online ? '独立进程 · 在线（4317）' : '独立进程 · 未启动（见 README）'); }
+  }).catch(function () {});
 </script>
 </body>
 </html>

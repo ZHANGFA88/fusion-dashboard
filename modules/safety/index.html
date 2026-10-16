@@ -125,5 +125,27 @@ async function load(ds){
     const papers=await getJSON(`${RAW}/daily-papers/${year}/${ds}.json`);
     $('paperCount').textContent='· '+papers.length+' 篇';
     $('papers').innerHTML=papers.map(p=>{
-      const authors=(p.authors||[]);const aTxt=authors.length>3?authors.slice(0,3).join('、')+' 等 '+
-...[truncated 1001 chars]
+      const authors=(p.authors||[]);const aTxt=authors.length>3?authors.slice(0,3).join('、')+' 等 '+authors.length+' 人':authors.join('、');
+      const chips=[p.venue?'<span class="chip venue">'+esc(p.venue)+'</span>':'',p.date?'<span class="chip">'+esc(p.date)+'</span>':''].concat((p.topics||[]).map(t=>'<span class="chip">'+esc(t)+'</span>')).join('');
+      return '<article class="card"><div class="tz">'+esc(p.titleZh||p.title||'')+'</div>'
+        +(p.titleZh&&p.title?'<div class="te">'+esc(p.title)+'</div>':'')
+        +'<div class="line">'+esc(p.line||'')+'</div>'
+        +'<div class="meta">'+chips+'</div>'
+        +(aTxt?'<div class="authors">'+esc(aTxt)+'</div>':'')
+        +'<div class="links">'+(p.url?'<a href="'+esc(p.url)+'" target="_blank" rel="noopener">原文 ↗</a>':'')+(p.site?'<a href="'+esc(p.site)+'" target="_blank" rel="noopener">站内页 ↗</a>':'')+'</div></article>';
+    }).join('');
+    $('status').textContent='已更新 · 数据来自 AISafetyHot-Hub';
+  }catch(e){
+    $('paperCount').textContent='';
+    $('papers').innerHTML='<p class="empty">这一天没有精选文件。</p>';
+    $('status').innerHTML='<span class="err">精选读取失败</span>';
+  }
+}
+
+$('prevBtn').onclick=()=>load(shift(cur,-1));
+$('nextBtn').onclick=()=>load(shift(cur,1));
+$('latestBtn').onclick=async()=>{try{load(await findLatest())}catch(e){$('status').innerHTML='<span class="err">'+esc(e.message)+'</span>'}};
+(async()=>{try{load(await findLatest())}catch(e){$('dateBox').textContent='—';$('daily').innerHTML='<p class="empty err">'+esc(e.message)+'</p>';$('papers').innerHTML=''}})();
+</script>
+</body>
+</html>

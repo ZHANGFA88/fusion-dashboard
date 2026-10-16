@@ -8,7 +8,9 @@ import os, json, subprocess, urllib.request
 API_BASE = os.environ.get('API_BASE', 'http://127.0.0.1:8770')
 OPENCLAW_BIN = os.environ.get('OPENCLAW_BIN', '/opt/homebrew/bin/openclaw')
 WX_TARGET = os.environ.get('WX_TARGET', 'o9cq80zOXMiSDvE8M5PAioQH4PjM@im.wechat')
-STATE_FILE = os.environ.get('ALERT_STATE', os.path.expanduser('~/finance-dashboard/data/alert_push_state.json'))
+# 融合仓收尾：默认状态文件改为本仓库 data/ 目录（原旧仓 ~/finance-dashboard 路径已废弃），仍可被 ALERT_STATE 覆盖
+REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+STATE_FILE = os.environ.get('ALERT_STATE', os.path.join(REPO_DIR, 'data', 'alert_push_state.json'))
 # 最低推送阈值：单窗涨跌幅绝对值(%)，过滤噪音
 MIN_PCT = float(os.environ.get('ALERT_MIN_PCT', '0.8'))
 MAX_PER_RUN = int(os.environ.get('ALERT_MAX_PER_RUN', '8'))

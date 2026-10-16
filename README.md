@@ -71,10 +71,20 @@ fusion-dashboard/
 │  └─ FINSIGHT-README.md    FinSight 原 README
 ├─ docs/
 │  ├─ TUTORIAL.md           详细教程
+│  ├─ PUSH.md               微信推送（A5）说明
 │  └─ CREDITS.md            来源与许可
+├─ deploy/                  一键部署包（Mac launchd / Linux systemd / nginx 模板）
+├─ .mcp.json                MCP 客户端配置（prompt-spider 本地桥 + aisafetyhot 远程）
 ├─ PLAN.md                  融合大纲与执行状态（方向 B 的完整决策记录）
 └─ README.md                本文件
 ```
+
+## 后台聚合接口（P2）
+
+主干在原有接口之外提供两个只读聚合接口（模块内部互不改动，数据只在主干层汇合）：
+
+- `GET /api/fusion/status`：五模块关键数（指数、Degen 余额/战绩/持仓、赛跑终值、安全最新日期与精选 Top5、蜘蛛在线状态），30 秒缓存；门户卡片的实时数字来自这里。
+- `GET /api/fusion/digest`：把聚合拼成一段可直接推送的文本，微信推送脚本可直接消费。
 
 ## 端口
 
