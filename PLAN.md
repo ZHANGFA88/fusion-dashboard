@@ -37,5 +37,5 @@
 ## 执行状态
 
 - **P0 已于 2026-10-16 在本地完成并验收**（用户「开始吧」后）：骨架在 ~/workspace/fusion-dashboard/——门户页、serve.py 主干（仅加 3 行路由改动）、FinSight/grokbot/spider 模块原样拷入；文件哈希与原仓逐一对照一致（serve.py 除外，即主干那 3 行）；本地实测 /, /finance, /api/finance/indices, /modules/degen/*, 蜘蛛 :4317 全部 200、标题与内容正确。整包 zip 已交付用户（Muse 文件链接，2026-10-18 到期）。
-- **GitHub 落点受阻**：Muse 的 GitHub App 无建仓权限（create_repository 返回 403 Resource not accessible by integration）。待用户手动在 GitHub 建私有空仓 fusion-dashboard 并将 Muse App 安装到该仓，之后即可用 push_files 推送（office-bg.jpg 等二进制走 contents API base64，推送时验证）。
+- **GitHub 已落地（2026-10-16 13:42）**：私有仓 ZHANGFA88/fusion-dashboard 已建（App 无建仓权限，改由浏览器在用户登录态上建仓）；P0 全部文件已推送并回读验证：65 个文本文件（9 次提交）+ 6 个二进制（浏览器网页上传，blob 哈希与本地逐一一致，含 office-bg.jpg 与 9.1MB preview.gif）。注意：MCP create_or_update_file 会把 base64 当纯文本存，二进制只能走网页上传或本地 git（4 个品牌图曾误存为 base64 文本，已删除重传）。
 - 模块 E 形态：P0 按推荐走门户直链官网；阅读页与否 P1 再议。
