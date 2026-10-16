@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fusion Console · Cinema</title>
+<link rel="stylesheet" href="/app/assets/cinema.css">
+</head>
+<body>
+<canvas id="globe"></canvas>
+<div id="vignette"></div>
+<header id="c-top">
+  <div class="c-brand"><span class="c-logo"></span><span id="cBrand">FUSION</span><small id="cTag"></small></div>
+  <nav id="cNav"></nav>
+  <div id="cClock" class="num"></div>
+  <div id="cDots"></div>
+  <button id="cLang" type="button">EN</button>
+</header>
+<main id="c-main">
+  <section id="hero">
+    <div class="hero-side left">
+      <div class="hero-label" id="raceLabel"></div>
+      <div class="hero-num gold num" id="raceValue">—</div>
+      <div class="hero-sub num" id="raceSub"></div>
+      <div class="hero-mini num" id="raceMini"></div>
+    </div>
+    <div class="hero-side right">
+      <div class="hero-label" id="idxLabel"></div>
+      <div class="hero-num cyan num" id="idxValue">—</div>
+      <div class="hero-sub num" id="idxSub"></div>
+      <div class="hero-mini num" id="idxMini"></div>
+    </div>
+  </section>
+  <section id="orbitStrip"></section>
+  <section id="lowerThird">
+    <div id="feedPanel">
+      <div class="panel-title" id="feedTitle"></div>
+      <div id="feedList"></div>
+    </div>
+    <div id="equityPanel">
+      <div class="panel-title" id="eqTitle"></div>
+      <canvas id="eqCanvas"></canvas>
+      <div class="eq-foot num" id="eqFoot"></div>
+    </div>
+  </section>
+</main>
+<footer id="c-foot"></footer>
+<script src="/app/assets/i18n.js"></script>
+<script src="/app/assets/cinema.js"></script>
+</body>
+</html>
