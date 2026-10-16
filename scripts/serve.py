@@ -4,7 +4,7 @@
 FinSight 金融大屏后端 - 纯标准库 + SQLite
 多源: A股走东方财富(~3秒), 港美股/ETF/外汇/加密走 Yahoo Finance
 """
-import os, json, time, sqlite3, urllib.parse, urllib.request, re, threading, random
+import os, json, time, sqlite3, urllib.parse, urllib.request, re, threading, random, datetime
 import http.cookiejar, gzip
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 
@@ -1901,6 +1901,89 @@ def ai_narrative_get(symbol, name, ind, analysis, index_env=None):
             t.start()
     return ('generating', '')
 
+# ========== Fusion 聚合（P2 后台互喂：只在主干层聚合，不改动任何模块内部） ==========
+FUSION_TTL = 30  # 秒
+_fusion_cache = {'ts': 0, 'status': None}
+DEGEN_STATE_URL = 'https://raw.githubusercontent.com/Vazolini/grokbot-jev-dashboard/data/state.json'
+SAFETY_RAW = 'https://raw.githubusercontent.com/ZHANGFA88/AISafetyHot-Hub/main'
+
+def _pick(d, *keys):
+    for k in keys:
+        if isinstance(d, dict) and d.get(k) not in (None, ''):
+            return d[k]
+    return None
+
+def _fusion_indices():
+    items = []
+    try:
+        for it in (_index_cache_get() or []):
+            items.append({'name': _pick(it, 'name', 'label'),
+                          'price': _pick(it, 'price', 'last', 'close'),
+                          'pct': _pick(it, 'pct', 'change_pct', 'chg_pct', 'percent')})
+    except Exception:
+        pass
+    return items
+
+def _fusion_degen():
+    try:
+        st = json.loads(http_get_retry(DEGEN_STATE_URL, timeout=8, tries=2))
+        closed = st.get('closed') or []
+        wins = sum(1 for c in closed if (c.get('pnl') or 0) > 0)
+        eq = st.get('equity')
+        if isinstance(eq, list) and eq:
+            eq = eq[-1].get('v') if isinstance(eq[-1], dict) else eq[-1]
+        return {'online': True, 'bal': st.get('bal'), 'equity': eq,
+                'wins': wins, 'losses': len(closed) - wins, 'open': len(st.get('open') or [])}
+    except Exception:
+        return {'online': False}
+
+def _fusion_safety():
+    today = datetime.date.today()
+    for back in range(0, 8):
+        d = today - datetime.timedelta(days=back)
+        ds = d.isoformat()
+        try:
+            papers = json.loads(http_get(f'{SAFETY_RAW}/daily-papers/{d.year}/{ds}.json', timeout=6))
+            top = [{'titleZh': p.get('titleZh') or p.get('title'), 'line': p.get('line'),
+                    'url': p.get('url')} for p in papers[:5]]
+            return {'online': True, 'latest': ds, 'count': len(papers), 'top': top}
+        except Exception:
+            continue
+    return {'online': False}
+
+def _fusion_race():
+    try:
+        with open(os.path.join(BASE_DIR, 'modules', 'race', 'data', 'engine.json'),
+                  encoding='utf-8') as f:
+            eng = json.load(f)
+        port = eng.get('portfolio') or {}
+        dates = eng.get('dates') or []
+        return {'online': True, 'periods': len(eng.get('buy_idx') or []),
+                'events': len(eng.get('events') or []),
+                'range': [dates[0], dates[-1]] if dates else None,
+                'final_value': port.get('value'), 'port_ret': port.get('ret'),
+                'eq_ret': port.get('eq_ret'), 'irr': port.get('irr'), 'mdd': port.get('mdd')}
+    except Exception:
+        return {'online': False}
+
+def _fusion_spider():
+    try:
+        json.loads(http_get('http://127.0.0.1:4317/status', timeout=2))
+        return {'online': True}
+    except Exception:
+        return {'online': False}
+
+def _fusion_status_get():
+    now = time.time()
+    if _fusion_cache['status'] and now - _fusion_cache['ts'] < FUSION_TTL:
+        return _fusion_cache['status']
+    status = {'ok': True, 'ts': int(now),
+              'finance': {'indices': _fusion_indices()},
+              'degen': _fusion_degen(), 'race': _fusion_race(),
+              'safety': _fusion_safety(), 'spider': _fusion_spider()}
+    _fusion_cache.update(ts=now, status=status)
+    return status
+
 # ========== HTTP 服务 ==========
 _quote_cache = {'data': None, 'ts': 0}
 QUOTE_TTL = 8  # 秒
@@ -1958,6 +2041,10 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._api_news(q)
             if path == '/api/finance/picks':
                 return self._api_picks(q)
+            if path == '/api/fusion/status':
+                return self._api_fusion_status(q)
+            if path == '/api/fusion/digest':
+                return self._api_fusion_digest(q)
             if path == '/' :
                 # Fusion 主干改动（仅路由层）：根路径给门户，FinSight 原页走 /finance
                 self.path = '/portal/index.html'
@@ -2072,6 +2159,37 @@ class Handler(SimpleHTTPRequestHandler):
         items = [dict(r) for r in rs]
         return self._json(200, {'ok': True, 'items': items, 'ts': int(time.time()),
                                 'trading': is_a_share_trading_time()})
+
+    def _api_fusion_status(self, q):
+        """Fusion 聚合状态（P2）：五模块关键数一口出，供门户与外部脚本消费"""
+        return self._json(200, _fusion_status_get())
+
+    def _api_fusion_digest(self, q):
+        """Fusion 每日聚合文本：行情 + Degen 战绩 + 赛跑终值 + 安全精选，可直接用于推送"""
+        st = _fusion_status_get()
+        def pct(v):  # 指数 pct 本就是百分数（如 0.45 表示 +0.45%）
+            return '—' if v is None else ('%+.2f%%' % float(v))
+        def frac(v):  # 赛跑收益率是小数（如 3.5324 表示 +353.24%）
+            return '—' if v is None else ('%+.2f%%' % (float(v) * 100))
+        def money(v, sym='¥'):
+            return '—' if v is None else ('%s%s' % (sym, format(int(round(float(v))), ',')))
+        lines = ['【Fusion 每日聚合】' + datetime.date.today().isoformat()]
+        idx = (st.get('finance') or {}).get('indices') or []
+        if idx:
+            lines.append('行情：' + ' · '.join('%s %s（%s）' % (i.get('name') or '?', i.get('price') or '—', pct(i.get('pct'))) for i in idx[:4]))
+        dg = st.get('degen') or {}
+        if dg.get('online'):
+            lines.append('Degen Lab：余额 %s · 战绩 %s 胜 %s 负 · 持仓 %s' % (money(dg.get('bal'), '$'), dg.get('wins'), dg.get('losses'), dg.get('open')))
+        rc = st.get('race') or {}
+        if rc.get('online'):
+            lines.append('定投赛跑：组合终值 %s（%s）· 等分 %s · IRR %s' % (money(rc.get('final_value')), frac(rc.get('port_ret')), frac(rc.get('eq_ret')), frac(rc.get('irr'))))
+        sf = st.get('safety') or {}
+        if sf.get('online'):
+            lines.append('AI 安全精选（%s · %s 篇）：' % (sf.get('latest'), sf.get('count')))
+            for t in (sf.get('top') or [])[:3]:
+                lines.append(' · ' + (t.get('titleZh') or ''))
+        lines.append('蜘蛛服务：' + ('在线' if (st.get('spider') or {}).get('online') else '离线'))
+        return self._json(200, {'ok': True, 'text': '\n'.join(lines), 'status': st})
 
     def _api_indices(self, q):
         """大盘四大指数实时（带缓存）"""
